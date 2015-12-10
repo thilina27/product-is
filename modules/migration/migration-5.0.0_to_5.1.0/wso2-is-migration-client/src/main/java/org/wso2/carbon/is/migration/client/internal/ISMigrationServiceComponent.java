@@ -19,6 +19,7 @@ package org.wso2.carbon.is.migration.client.internal;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.ComponentContext;
+import org.wso2.carbon.identity.core.util.IdentityCoreInitializedEvent;
 import org.wso2.carbon.is.migration.client.MigrateFrom5to510;
 import org.wso2.carbon.is.migration.util.Constants;
 import org.wso2.carbon.user.core.service.RealmService;
@@ -44,15 +45,10 @@ public class ISMigrationServiceComponent {
      */
     protected void activate(ComponentContext context) {
         try {
-            String value = System.getProperty("migrate");
-            if (Boolean.parseBoolean(value)) {
-                MigrateFrom5to510 migrateFrom5to510 = new MigrateFrom5to510();
-                migrateFrom5to510.databaseMigration(Constants.VERSION_5_1_0);
-            }
+            ISMigrationServiceDataHolder.setIdentityOracleUser(System.getProperty("identityOracleUser"));
+            ISMigrationServiceDataHolder.setUmOracleUser(System.getProperty("umOracleUser"));
             if(log.isDebugEnabled()) {
                 log.debug("WSO2 IS migration bundle is activated");
-            } else if(Boolean.parseBoolean(value)){
-                log.info("WSO2 IS migration bundle is activated");
             }
         } catch (Throwable e) {
             log.error("Error while initiating Migration component", e);
@@ -81,7 +77,7 @@ public class ISMigrationServiceComponent {
         if(log.isDebugEnabled()) {
             log.debug("Setting RealmService to WSO2 IS Migration component");
         }
-        ServiceHolder.setRealmService(realmService);
+        ISMigrationServiceDataHolder.setRealmService(realmService);
     }
 
     /**
@@ -93,7 +89,17 @@ public class ISMigrationServiceComponent {
         if (log.isDebugEnabled()) {
             log.debug("Unsetting RealmService from WSO2 IS Migration component");
         }
-        ServiceHolder.setRealmService(null);
+        ISMigrationServiceDataHolder.setRealmService(null);
+    }
+
+    protected void unsetIdentityCoreInitializedEventService(IdentityCoreInitializedEvent identityCoreInitializedEvent) {
+        /* reference IdentityCoreInitializedEvent service to guarantee that this component will wait until identity core
+         is started */
+    }
+
+    protected void setIdentityCoreInitializedEventService(IdentityCoreInitializedEvent identityCoreInitializedEvent) {
+        /* reference IdentityCoreInitializedEvent service to guarantee that this component will wait until identity core
+         is started */
     }
 
 }
