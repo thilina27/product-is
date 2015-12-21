@@ -95,7 +95,7 @@ public class MigrateFrom5to510 implements MigrationClient {
         } catch (IdentityException e) {
             String errorMsg = "Error when reading the JDBC Configuration from the file.";
             log.error(errorMsg, e);
-            throw new IdentityException(errorMsg, e);
+            throw new ISMigrationException(errorMsg, e);
         }
     }
 
@@ -114,7 +114,7 @@ public class MigrateFrom5to510 implements MigrationClient {
                         "identity.xml file. Terminating the JDBC Persistence Manager " +
                         "initialization. This may affect certain functionality.";
                 log.error(errorMsg);
-                throw new IdentityException(errorMsg);
+                throw new ISMigrationException(errorMsg);
             }
 
             OMElement dataSourceElem = persistenceManagerConfigElem.getFirstChildWithName(
@@ -125,7 +125,7 @@ public class MigrateFrom5to510 implements MigrationClient {
                         "Manager in identity.xml file. Terminating the JDBC Persistence Manager " +
                         "initialization. This might affect certain features.";
                 log.error(errorMsg);
-                throw new IdentityException(errorMsg);
+                throw new ISMigrationException(errorMsg);
             }
 
             OMElement dataSourceNameElem = dataSourceElem.getFirstChildWithName(
@@ -139,7 +139,7 @@ public class MigrateFrom5to510 implements MigrationClient {
         } catch (NamingException e) {
             String errorMsg = "Error when looking up the Identity Data Source.";
             log.error(errorMsg, e);
-            throw new IdentityException(errorMsg, e);
+            throw new ISMigrationException(errorMsg, e);
         }
     }
 
@@ -270,7 +270,8 @@ public class MigrateFrom5to510 implements MigrationClient {
                         updateUserNamePS.setString(1, username);
                         updateUserNamePS.setInt(2, tenantId);
                         updateUserNamePS.setString(3, userDomain);
-                        updateUserNamePS.setString(4, accessToken);
+                        updateUserNamePS.setString(4, authzUser);
+                        updateUserNamePS.setString(5, accessToken);
                         updateUserNamePS.addBatch();
 
                         insertTokenScopeHashPS.setString(1, DigestUtils.md5Hex(scopeString));
@@ -315,8 +316,9 @@ public class MigrateFrom5to510 implements MigrationClient {
                         updateUserNameAuthorizationCodePS.setString(1, username);
                         updateUserNameAuthorizationCodePS.setInt(2, tenantId);
                         updateUserNameAuthorizationCodePS.setString(3, userDomain);
-                        updateUserNameAuthorizationCodePS.setString(4, authorizationCode);
-                        updateUserNameAuthorizationCodePS.setString(5, UUID.randomUUID().toString());
+                        updateUserNameAuthorizationCodePS.setString(4, UUID.randomUUID().toString());
+                        updateUserNameAuthorizationCodePS.setString(5, authzUser);
+                        updateUserNameAuthorizationCodePS.setString(6, authorizationCode);
                         updateUserNameAuthorizationCodePS.addBatch();
                     }
                 } catch (UserStoreException e) {
@@ -423,10 +425,8 @@ public class MigrateFrom5to510 implements MigrationClient {
 
             foreignKeyPS = identityConnection.prepareStatement(setScopeAssociationPrimaryKey);
             foreignKeyPS.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e);
         }finally {
             IdentityDatabaseUtil.closeStatement(primaryKeyPS);
             IdentityDatabaseUtil.closeStatement(authorizationCodePrimaryKeyPS);
